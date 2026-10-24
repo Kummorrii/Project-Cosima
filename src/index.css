@@ -1,0 +1,871 @@
+:root {
+  --bg: #05070d;
+  --panel: rgba(14, 20, 33, 0.55);
+  --panel-border: rgba(160, 190, 255, 0.14);
+  --text: #e8eefc;
+  --text-dim: #8d9ab8;
+  --accent: #6aa8ff;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* The canvas fills the whole screen; all UI floats on top of it. */
+canvas {
+  display: block;
+}
+
+/* --- HUD ----------------------------------------------------------------- */
+
+.hud {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 100;
+  width: min(340px, calc(100vw - 32px));
+  padding: 14px 18px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  pointer-events: none; /* never block dragging the scene; interactive children opt back in */
+}
+
+.hud h1 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.hud-hint {
+  margin: 10px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.hud-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  pointer-events: auto;
+}
+
+.hud-actions button {
+  padding: 6px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: rgba(160, 190, 255, 0.08);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.hud-actions button:hover {
+  background: rgba(160, 190, 255, 0.18);
+}
+
+.hud-actions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- Search -------------------------------------------------------------- */
+
+.search {
+  position: relative;
+  margin-top: 12px;
+  pointer-events: auto;
+}
+
+.search input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: rgba(160, 190, 255, 0.06);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.search input::placeholder {
+  color: var(--text-dim);
+}
+
+.search input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background: rgba(10, 15, 26, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.search-option {
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.search-option[aria-selected='true'] {
+  background: rgba(160, 190, 255, 0.14);
+}
+
+.search-option strong {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.search-option span {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.search-status {
+  margin: 8px 2px 0;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.search-status[data-tone='error'] {
+  color: #ff9b8a;
+}
+
+/* --- Destination marker -------------------------------------------------- */
+
+.marker {
+  position: relative;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.marker-ring {
+  position: absolute;
+  top: -14px;
+  left: -14px;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(106, 168, 255, 0.45);
+}
+
+.marker-ring::after {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  animation: marker-pulse 2.4s ease-out infinite;
+}
+
+.marker-label {
+  position: absolute;
+  top: -22px;
+  left: 22px;
+  padding: 6px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  white-space: nowrap;
+}
+
+.marker-label strong {
+  display: block;
+  font-size: 0.85rem;
+}
+
+.marker-label span {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+@keyframes marker-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marker-ring::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* --- Detail panel -------------------------------------------------------- */
+
+.panel {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  width: min(380px, calc(100vw - 32px));
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  background: rgba(10, 15, 26, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  overflow: hidden;
+  transform: translateX(calc(100% + 32px));
+  visibility: hidden;
+  transition:
+    transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    visibility 0s linear 0.4s;
+}
+
+.panel[data-open='true'] {
+  transform: none;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px 18px;
+}
+
+.panel-kind {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--accent);
+}
+
+.panel-header h2 {
+  margin: 8px 0 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.panel-header p {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.panel-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: rgba(160, 190, 255, 0.06);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.panel-close:hover {
+  background: rgba(160, 190, 255, 0.16);
+}
+
+.panel-close:focus-visible,
+.sky-tabs button:focus-visible,
+.panel a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.panel-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 4px 18px 18px;
+  overflow-y: auto;
+}
+
+.sky-frame {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: #02040a;
+  overflow: hidden;
+}
+
+.sky-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.sky-frame[data-state='ready'] img {
+  opacity: 1;
+}
+
+.sky-note {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.sky-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.sky-tabs button {
+  padding: 5px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.sky-tabs button[aria-pressed='true'] {
+  background: rgba(106, 168, 255, 0.16);
+  border-color: rgba(106, 168, 255, 0.5);
+  color: var(--text);
+}
+
+.panel-credit,
+.panel-muted {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.facts {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--panel-border);
+  font-size: 0.82rem;
+}
+
+.facts dt {
+  color: var(--text-dim);
+}
+
+.facts dd {
+  margin: 0;
+  text-align: right;
+}
+
+.panel-about {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.panel a {
+  color: var(--accent);
+}
+
+.panel-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 700px) {
+  .panel {
+    top: auto;
+    left: 16px;
+    width: auto;
+    max-height: 62vh;
+    transform: translateY(calc(100% + 32px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .sky-frame img {
+    transition: none;
+  }
+}
+
+/* --- Astronomy Picture of the Day ----------------------------------------- */
+
+.apod {
+  width: min(880px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  background: rgba(10, 15, 26, 0.97);
+  color: var(--text);
+  overflow: hidden;
+}
+
+.apod[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.apod::backdrop {
+  background: rgba(2, 4, 10, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.apod-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 12px 18px;
+}
+
+.apod-date {
+  margin-left: 10px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.apod-scroll {
+  overflow-y: auto;
+}
+
+.apod-media {
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  max-height: 58vh;
+  background: #02040a;
+}
+
+.apod-media img {
+  display: block;
+  max-width: 100%;
+  max-height: 58vh;
+  object-fit: contain;
+}
+
+.apod-text {
+  padding: 18px 20px 20px;
+}
+
+.apod-text h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.apod-explanation {
+  margin: 14px 0 16px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.apod-message {
+  padding: 28px 20px;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.apod-retry {
+  margin-top: 12px;
+  padding: 6px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: rgba(160, 190, 255, 0.08);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.apod a {
+  color: var(--accent);
+}
+
+.apod a:focus-visible,
+.apod-retry:focus-visible,
+.apod .panel-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.apod-note {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: rgba(106, 168, 255, 0.08);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+/* --- Focus mode ------------------------------------------------------------ */
+
+/* Blurs and dims the galaxy behind the focused object. */
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(2, 4, 10, 0.42);
+  backdrop-filter: blur(14px) saturate(0.85);
+  -webkit-backdrop-filter: blur(14px) saturate(0.85);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+}
+
+.veil[data-active='true'] {
+  opacity: 1;
+}
+
+/* The object itself, drawn in its own canvas above the blur. Dragging it rotates it. */
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  opacity: 0;
+  visibility: hidden;
+  touch-action: none;
+  /* Fade out first, then hide, so it stops catching the mouse once it is gone. */
+  transition:
+    opacity 0.8s ease,
+    visibility 0s linear 0.8s;
+}
+
+.stage[data-active='true'] {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/*
+  The canvas library gives its own wrapper element pointer-events: auto, which beats
+  the parent. Without this, the hidden stage sits on top of the galaxy and swallows
+  every drag and scroll meant for it.
+*/
+.stage:not([data-active='true']),
+.stage:not([data-active='true']) * {
+  pointer-events: none !important;
+}
+
+.stage canvas {
+  cursor: grab;
+}
+
+.stage canvas:active {
+  cursor: grabbing;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .veil {
+    background: rgba(2, 4, 10, 0.82);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .veil,
+  .stage {
+    transition: none;
+  }
+}
+
+/* --- Watermark -------------------------------------------------------------- */
+
+/* Sits above the blur (40) and the focus stage (45) so it stays sharp, below the panels (100). */
+.watermark {
+  position: fixed;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  translate: -50% 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: rgba(232, 238, 252, 0.45);
+  text-shadow: 0 0 10px rgba(5, 7, 13, 0.9);
+  white-space: nowrap;
+  pointer-events: none; /* never get in the way of dragging the galaxy */
+  user-select: none;
+}
+
+.watermark a {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto; /* only the link itself can be clicked */
+}
+
+.watermark a:hover {
+  color: var(--text);
+}
+
+.watermark a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.watermark-star {
+  color: var(--accent);
+  opacity: 0.7;
+}
+
+/* --- Intro ----------------------------------------------------------------- */
+
+/*
+  The curtain, its folds and the star are drawn frame by frame in Intro.tsx.
+  This file only styles them. Timeline (seconds):
+    0.25  the title fades in with a glow
+    1.20  the star and its light appear at the bottom center
+    1.90  the star rises and lifts the curtain; the title fades as it approaches
+    4.70  the curtain is gone
+*/
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+.intro[data-leaving='true'] {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.intro-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.intro-glow-group {
+  opacity: 0;
+}
+
+.intro-folds {
+  stroke: rgba(150, 180, 255, 0.2);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.intro-hem {
+  stroke-width: 2;
+  filter: drop-shadow(0 0 6px rgba(106, 168, 255, 0.9));
+}
+
+.intro-title-wrap {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.intro-title {
+  margin: 0;
+  padding: 0 24px;
+  text-align: center;
+  font-size: clamp(2rem, 7vw, 5.2rem);
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  color: #fff;
+  animation: intro-title-in 1.1s 0.25s both;
+}
+
+.intro-title span {
+  display: inline-block;
+  animation: intro-glow-pulse 2.4s ease-in-out infinite alternate;
+}
+
+/* A zero-size anchor that the script moves to the star's position. */
+.intro-star-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.intro-bloom {
+  position: absolute;
+  width: min(90vmin, 760px);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: radial-gradient(
+    circle,
+    rgba(106, 168, 255, 0.3),
+    rgba(106, 168, 255, 0.1) 35%,
+    transparent 68%
+  );
+}
+
+.intro-star {
+  position: absolute;
+  width: clamp(40px, 6vw, 68px);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+}
+
+.intro-star svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 8px #fff) drop-shadow(0 0 26px rgba(106, 168, 255, 0.95));
+  animation:
+    intro-twinkle 1.4s ease-in-out infinite,
+    intro-spin 2.8s 1.9s cubic-bezier(0.6, 0, 0.4, 1) forwards;
+}
+
+.intro-skip {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1;
+  padding: 6px 12px;
+  border: 1px solid rgba(160, 190, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(5, 7, 13, 0.5);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  opacity: 0;
+  animation:
+    intro-fade-in 0.5s 0.8s forwards,
+    intro-fade-out 0.4s 4.3s forwards;
+}
+
+.intro-skip:hover {
+  color: var(--text);
+}
+
+.intro-skip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@keyframes intro-title-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes intro-glow-pulse {
+  from {
+    text-shadow:
+      0 0 10px rgba(255, 255, 255, 0.85),
+      0 0 30px rgba(106, 168, 255, 0.65),
+      0 0 70px rgba(106, 168, 255, 0.4);
+  }
+  to {
+    text-shadow:
+      0 0 16px rgba(255, 255, 255, 1),
+      0 0 46px rgba(106, 168, 255, 0.9),
+      0 0 110px rgba(106, 168, 255, 0.6);
+  }
+}
+
+@keyframes intro-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes intro-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes intro-twinkle {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 1.18;
+  }
+}
+
+@keyframes intro-spin {
+  to {
+    rotate: 90deg;
+  }
+}
